@@ -134,6 +134,12 @@ class DogtagInstance(service.Service):
         self.subject_base = None
         self.nss_db = nss_db
         self.config = config  # Path to CS.cfg
+        # HSM parameters
+        self.hsm_enable = False
+        self.hsm_libfile = None
+        self.hsm_modulename = None
+        self.token_name = 'internal'
+        self.token_password = None
 
     def is_installed(self):
         """
