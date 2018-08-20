@@ -293,10 +293,10 @@ class CAInstance(DogtagInstance):
        2 = have signed cert, continue installation
     """
 
-    tracking_reqs = ('auditSigningCert cert-pki-ca',
+    tracking_reqs = ['auditSigningCert cert-pki-ca',
                      'ocspSigningCert cert-pki-ca',
                      'subsystemCert cert-pki-ca',
-                     'caSigningCert cert-pki-ca')
+                     'caSigningCert cert-pki-ca']
     server_cert_name = 'Server-Cert cert-pki-ca'
 
     def __init__(self, realm=None, host_name=None, custodia=None):
@@ -335,7 +335,10 @@ class CAInstance(DogtagInstance):
                            ca_signing_algorithm=None,
                            ca_type=None, external_ca_profile=None,
                            ra_p12=None, ra_only=False,
-                           promote=False, use_ldaps=False):
+                           promote=False, use_ldaps=False,
+                           hsm_enable=False, hsm_libfile=None, 
+                           hsm_modulename=None, token_name='internal', 
+                           token_password=None):
         """Create a CA instance.
 
            To create a clone, pass in pkcs12_info.
@@ -381,6 +384,12 @@ class CAInstance(DogtagInstance):
 
         self.no_db_setup = promote
         self.use_ldaps = use_ldaps
+
+        self.hsm_enable = hsm_enable
+        self.hsm_libfile = hsm_libfile 
+        self.hsm_modulename = hsm_modulename
+        self.token_name = token_name 
+        self.token_password = token_password
 
         # Determine if we are installing as an externally-signed CA and
         # what stage we're in.
@@ -453,6 +462,8 @@ class CAInstance(DogtagInstance):
                     self.step(
                         "Ensuring backward compatibility",
                         self.__dogtag10_migration)
+                if self.hsm_enable:
+                    self.tracking_reqs = []
                 self.step("configure certificate renewals", self.configure_renewal)
                 self.step("configure Server-Cert certificate renewal", self.track_servercert)
                 self.step("Configure HTTP to proxy connections",
@@ -503,8 +514,17 @@ class CAInstance(DogtagInstance):
         config.set("CA", "pki_security_domain_name", self.security_domain_name)
         config.set("CA", "pki_enable_proxy", "True")
         config.set("CA", "pki_restart_configured_instance", "False")
-        config.set("CA", "pki_backup_keys", "True")
-        config.set("CA", "pki_backup_password", self.admin_password)
+        if self.hsm_enable:
+            config.set("CA", "pki_backup_keys", "False")
+            config.set("CA", "pki_backup_password", "")
+            config.set("CA", "pki_hsm_enable", "True")
+            config.set("CA", "pki_hsm_libfile", self.hsm_libfile)
+            config.set("CA", "pki_hsm_modulename", self.hsm_modulename)
+            config.set("CA", "pki_token_name", self.token_name)
+            config.set("CA", "pki_token_password", self.token_password)
+        else:
+            config.set("CA", "pki_backup_keys", "True")
+            config.set("CA", "pki_backup_password", self.admin_password)
         config.set("CA", "pki_profiles_in_ldap", "True")
         config.set("CA", "pki_default_ocsp_uri",
             "http://{}.{}/ca/ocsp".format(
@@ -564,6 +584,12 @@ class CAInstance(DogtagInstance):
             str(self.ca_subject))
 
         # Certificate nicknames
+        if self.hsm_enable:
+            config.set("CA", "pki_subsystem_token", self.token_name)
+            config.set("CA", "pki_ocsp_signing_token", self.token_name)
+            config.set("CA", "pki_sslserver_token", "internal")
+            config.set("CA", "pki_audit_signing_token", self.token_name)
+            config.set("CA", "pki_ca_signing_token", self.token_name)
         config.set("CA", "pki_subsystem_nickname", "subsystemCert cert-pki-ca")
         config.set("CA", "pki_ocsp_signing_nickname", "ocspSigningCert cert-pki-ca")
         config.set("CA", "pki_sslserver_nickname", "Server-Cert cert-pki-ca")
@@ -672,8 +698,9 @@ class CAInstance(DogtagInstance):
             print("%s --external-cert-file=/path/to/signed_certificate --external-cert-file=/path/to/external_ca_certificate" % sys.argv[0])
             sys.exit(0)
         else:
-            shutil.move(paths.CA_BACKUP_KEYS_P12,
-                        paths.CACERT_P12)
+            if not self.hsm_enable:
+                shutil.move(paths.CA_BACKUP_KEYS_P12,
+                            paths.CACERT_P12)
 
         logger.debug("completed creating ca instance")
 

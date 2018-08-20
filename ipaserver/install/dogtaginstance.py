@@ -194,10 +194,14 @@ class DogtagInstance(service.Service):
                 "Failed to stop the Dogtag instance."
                 "See the installation log for details.")
 
-    def enable_client_auth_to_db(self):
+    def enable_client_auth_to_db(self, hsm_enable=False, token_name='internal'):
         """
         Enable client auth connection to the internal db.
         """
+
+        clientCertNickname = 'subsystemCert cert-pki-ca'
+        if hsm_enable:
+            clientCertNickname = token_name + ':' + 'subsystemCert cert-pki-ca'
 
         with stopped_service('pki-tomcatd', 'pki-tomcat'):
             directivesetter.set_directive(
@@ -207,7 +211,7 @@ class DogtagInstance(service.Service):
             directivesetter.set_directive(
                 self.config,
                 'authz.instance.DirAclAuthz.ldap.ldapauth.clientCertNickname',
-                'subsystemCert cert-pki-ca', quotes=False, separator='=')
+                clientCertNickname, quotes=False, separator='=')
             directivesetter.set_directive(
                 self.config,
                 'authz.instance.DirAclAuthz.ldap.ldapconn.port', '636',
@@ -225,7 +229,7 @@ class DogtagInstance(service.Service):
             directivesetter.set_directive(
                 self.config,
                 'internaldb.ldapauth.clientCertNickname',
-                'subsystemCert cert-pki-ca', quotes=False, separator='=')
+                clientCertNickname, quotes=False, separator='=')
             directivesetter.set_directive(
                 self.config,
                 'internaldb.ldapconn.port', '636', quotes=False, separator='=')

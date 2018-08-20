@@ -276,6 +276,13 @@ def install_step_0(standalone, replica_config, options, custodia):
         ra_p12 = None
         ra_only = False
         promote = False
+
+        hsm_enable = options.hsm_enable
+        hsm_libfile = options.hsm_libfile
+        hsm_modulename = options.hsm_modulename
+        token_name = options.token_name
+        token_password = options.token_password
+
     else:
         cafile = os.path.join(replica_config.dir, 'cacert.p12')
         if options.promote:
@@ -295,6 +302,13 @@ def install_step_0(standalone, replica_config, options, custodia):
         ra_p12 = os.path.join(replica_config.dir, 'ra.p12')
         ra_only = not replica_config.setup_ca
         promote = options.promote
+
+        # TODO fix replica
+        hsm_enable = False
+        hsm_libfile = None
+        hsm_modulename = None
+        token_name = 'internal'
+        token_password = None
 
     # if upgrading from CA-less to CA-ful, need to rewrite
     # certmap.conf and subject_base configuration
@@ -322,8 +336,12 @@ def install_step_0(standalone, replica_config, options, custodia):
                           ra_p12=ra_p12,
                           ra_only=ra_only,
                           promote=promote,
-                          use_ldaps=standalone)
-
+                          use_ldaps=standalone,
+                          hsm_enable=hsm_enable,
+                          hsm_libfile=hsm_libfile,
+                          hsm_modulename=hsm_modulename,
+                          token_name=token_name,
+                          token_password=token_password)
 
 def install_step_1(standalone, replica_config, options, custodia):
     if replica_config is not None and not replica_config.setup_ca:
@@ -340,8 +358,11 @@ def install_step_1(standalone, replica_config, options, custodia):
 
     ca.stop('pki-tomcat')
 
+    hsm_enable = options.hsm_enable
+    token_name = options.token_name
     # This is done within stopped_service context, which restarts CA
-    ca.enable_client_auth_to_db()
+    ca.enable_client_auth_to_db(hsm_enable=hsm_enable,
+                                token_name=token_name)
 
     # Lightweight CA key retrieval is configured in step 1 instead
     # of CAInstance.configure_instance (which is invoked from step
@@ -509,6 +530,45 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
         description="Signing algorithm of the IPA CA certificate",
     )
     ca_signing_algorithm = master_install_only(ca_signing_algorithm)
+
+    hsm_enable = knob(
+        None,
+        description=("Store CA Signing, Subsystem, Audit and OCSP certificate "
+                     "in HSM"),
+    )
+    # TODO replica handling
+    hsm_enable = master_install_only(hsm_enable)
+
+    hsm_libfile = knob(
+        # pylint: disable=invalid-sequence-index
+        str, None,
+        description=("Library file for HSM"),
+        cli_names='--hsm-libfile',
+        cli_metavar='FILE',
+    )
+    # TODO replica handling
+    hsm_libfile = master_install_only(hsm_libfile)
+
+    hsm_modulename = knob(
+        str, None,
+        description=("The module name for HSM"),
+    )
+    # TODO replica handling
+    hsm_modulename = master_install_only(hsm_modulename)
+
+    token_name = knob(
+        str, None,
+        description=("The token name for HSM"),
+    )
+    # TODO replica handling
+    token_name = master_install_only(token_name)
+
+    token_password = knob(
+        str, None,
+        description=("The token name for HSM"),
+    )
+    # TODO replica handling
+    token_password = master_install_only(token_password)
 
     skip_schema_check = knob(
         None,
