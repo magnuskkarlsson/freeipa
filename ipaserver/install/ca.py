@@ -253,6 +253,11 @@ def install_step_0(standalone, replica_config, options, custodia):
     ca_subject = options._ca_subject
     subject_base = options._subject_base
     external_ca_profile = None
+    hsm_enable = options.hsm_enable
+    hsm_libfile = options.hsm_libfile
+    hsm_modulename = options.hsm_modulename
+    token_name = options.token_name
+    token_password = options.token_password
 
     if replica_config is None:
         ca_signing_algorithm = options.ca_signing_algorithm
@@ -277,18 +282,13 @@ def install_step_0(standalone, replica_config, options, custodia):
         ra_only = False
         promote = False
 
-        hsm_enable = options.hsm_enable
-        hsm_libfile = options.hsm_libfile
-        hsm_modulename = options.hsm_modulename
-        token_name = options.token_name
-        token_password = options.token_password
-
     else:
         cafile = os.path.join(replica_config.dir, 'cacert.p12')
         if options.promote:
             custodia.get_ca_keys(
                 cafile,
-                replica_config.dirman_password)
+                replica_config.dirman_password,
+                hsm_enable)
 
         ca_signing_algorithm = None
         ca_type = None
@@ -302,13 +302,6 @@ def install_step_0(standalone, replica_config, options, custodia):
         ra_p12 = os.path.join(replica_config.dir, 'ra.p12')
         ra_only = not replica_config.setup_ca
         promote = options.promote
-
-        # TODO fix replica
-        hsm_enable = False
-        hsm_libfile = None
-        hsm_modulename = None
-        token_name = 'internal'
-        token_password = None
 
     # if upgrading from CA-less to CA-ful, need to rewrite
     # certmap.conf and subject_base configuration
@@ -537,7 +530,7 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
                      "in HSM"),
     )
     # TODO replica handling
-    hsm_enable = master_install_only(hsm_enable)
+    #hsm_enable = master_install_only(hsm_enable)
 
     hsm_libfile = knob(
         # pylint: disable=invalid-sequence-index
@@ -547,28 +540,28 @@ class CAInstallInterface(dogtag.DogtagInstallInterface,
         cli_metavar='FILE',
     )
     # TODO replica handling
-    hsm_libfile = master_install_only(hsm_libfile)
+    #hsm_libfile = master_install_only(hsm_libfile)
 
     hsm_modulename = knob(
         str, None,
         description=("The module name for HSM"),
     )
     # TODO replica handling
-    hsm_modulename = master_install_only(hsm_modulename)
+    #hsm_modulename = master_install_only(hsm_modulename)
 
     token_name = knob(
         str, None,
         description=("The token name for HSM"),
     )
     # TODO replica handling
-    token_name = master_install_only(token_name)
+    #token_name = master_install_only(token_name)
 
     token_password = knob(
         str, None,
-        description=("The token name for HSM"),
+        description=("The token password for HSM"),
     )
     # TODO replica handling
-    token_password = master_install_only(token_password)
+     #token_password = master_install_only(token_password)
 
     skip_schema_check = knob(
         None,

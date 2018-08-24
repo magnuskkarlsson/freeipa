@@ -298,11 +298,13 @@ class CustodiaInstance(SimpleServiceInstance):
                 '-o', cacerts_file
             ])
 
-    def get_ca_keys(self, cacerts_file, cacerts_pwd):
+    def get_ca_keys(self, cacerts_file, cacerts_pwd, hsm_enable=False):
         certlist = ['caSigningCert cert-pki-ca',
                     'ocspSigningCert cert-pki-ca',
                     'auditSigningCert cert-pki-ca',
                     'subsystemCert cert-pki-ca']
+        if hsm_enable:
+            certlist = []
         data = {'prefix': 'ca',
                 'list': certlist}
         self._get_keys(cacerts_file, cacerts_pwd, data)

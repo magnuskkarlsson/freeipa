@@ -199,10 +199,9 @@ class DogtagInstance(service.Service):
         Enable client auth connection to the internal db.
         """
 
-        clientCertNickname = 'subsystemCert cert-pki-ca'
+        sub_system_nickname = 'subsystemCert cert-pki-ca'
         if hsm_enable:
-            clientCertNickname = token_name + ':' + 'subsystemCert cert-pki-ca'
-
+            sub_system_nickname = token_name + ':' + 'subsystemCert cert-pki-ca'
         with stopped_service('pki-tomcatd', 'pki-tomcat'):
             directivesetter.set_directive(
                 self.config,
@@ -211,7 +210,7 @@ class DogtagInstance(service.Service):
             directivesetter.set_directive(
                 self.config,
                 'authz.instance.DirAclAuthz.ldap.ldapauth.clientCertNickname',
-                clientCertNickname, quotes=False, separator='=')
+                sub_system_nickname, quotes=False, separator='=')
             directivesetter.set_directive(
                 self.config,
                 'authz.instance.DirAclAuthz.ldap.ldapconn.port', '636',
@@ -229,7 +228,7 @@ class DogtagInstance(service.Service):
             directivesetter.set_directive(
                 self.config,
                 'internaldb.ldapauth.clientCertNickname',
-                clientCertNickname, quotes=False, separator='=')
+                sub_system_nickname, quotes=False, separator='=')
             directivesetter.set_directive(
                 self.config,
                 'internaldb.ldapconn.port', '636', quotes=False, separator='=')

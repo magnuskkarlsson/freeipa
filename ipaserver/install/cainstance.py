@@ -627,8 +627,9 @@ class CAInstance(DogtagInstance):
 
             # Clone
             config.set("CA", "pki_clone", "True")
-            config.set("CA", "pki_clone_pkcs12_path", paths.TMP_CA_P12)
-            config.set("CA", "pki_clone_pkcs12_password", self.dm_password)
+            if not self.hsm_enable:
+                config.set("CA", "pki_clone_pkcs12_path", paths.TMP_CA_P12)
+                config.set("CA", "pki_clone_pkcs12_password", self.dm_password)
             config.set("CA", "pki_clone_replication_security", "TLS")
             config.set("CA", "pki_clone_replication_master_port", str(self.master_replication_port))
             config.set("CA", "pki_clone_replication_clone_port", "389")
